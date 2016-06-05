@@ -23,11 +23,13 @@
     <ClInclude Include="face.h" />
     <ClInclude Include="json\json\json-forwards.h" />
     <ClInclude Include="json\json\json.h" />
+    <ClInclude Include="math.h" />
     <ClInclude Include="mesh.h" />
-    <ClInclude Include="mainRenderer.hpp" />
+    <ClInclude Include="mainRenderer.h" />
     <ClInclude Include="meshLoader.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="face.cpp" />
     <ClCompile Include="json\jsoncpp.cpp" />
     <ClCompile Include="Main.cpp" />

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <tchar.h>
-#include "mainRenderer.hpp"
+#include "mainRenderer.h"
 #include "Gdiplus.h"
 #include "Gdiplusgraphics.h"
 #include <future>

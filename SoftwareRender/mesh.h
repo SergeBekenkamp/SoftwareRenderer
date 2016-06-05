@@ -18,4 +18,5 @@ public:
 	std::unique_ptr<Face[]> Faces;
 	Mesh(string name, int verticeCount, int faceCount);
 	~Mesh();
+	static Mesh* CreateCube();
 };
