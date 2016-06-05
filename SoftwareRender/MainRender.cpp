@@ -71,6 +71,16 @@ void ProcessScanLine(int y, glm::vec3 pa, glm::vec3 pb, glm::vec3 pc, glm::vec3 
 	}
 }
 
+float Cross2D(float x0, float y0, float x1, float y1) {
+	return x0 * y1 - x1 * y0;
+}
+
+float LineSide2D(glm::vec3 p, glm::vec3 lineFrom, glm::vec3 lineTo)
+{
+
+	return Cross2D(p.x - lineFrom.x, p.y - lineFrom.y, lineTo.x - lineFrom.x, lineTo.y - lineFrom.y);
+
+}
 
 void DrawTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 color)
 {
@@ -98,33 +108,7 @@ void DrawTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 color)
 		p1 = temp;
 	}
 
-	// inverse slopes
-	float dP1P2, dP1P3;
-
-	// http://en.wikipedia.org/wiki/Slope
-	// Computing inverse slopes
-	if (p2.y - p1.y > 0)
-		dP1P2 = (p2.x - p1.x) / (p2.y - p1.y);
-	else
-		dP1P2 = 0;
-
-	if (p3.y - p1.y > 0)
-		dP1P3 = (p3.x - p1.x) / (p3.y - p1.y);
-	else
-		dP1P3 = 0;
-
-	// First case where triangles are like that:
-	// P1
-	// -
-	// -- 
-	// - -
-	// -  -
-	// -   - P2
-	// -  -
-	// - -
-	// -
-	// P3
-	if (dP1P2 > dP1P3)
+		if (LineSide2D(p2, p1, p3) > 0)
 	{
 		for (int y = (int)p1.y; y <= (int)p3.y; y++)
 		{
@@ -137,18 +121,7 @@ void DrawTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 color)
 				ProcessScanLine(y, p1, p3, p2, p3, color);
 			}
 		}
-	}
-	// First case where triangles are like that:
-	//       P1
-	//        -
-	//       -- 
-	//      - -
-	//     -  -
-	// P2 -   - 
-	//     -  -
-	//      - -
-	//        -
-	//       P3
+	}	
 	else
 	{
 		for (int y = (int)p1.y; y <= (int)p3.y; y++)
