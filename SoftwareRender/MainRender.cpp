@@ -22,7 +22,6 @@ float* depthBuffer;
 
 
 //Draw the actual point, 
-void putPixel(int x, int y, int z, glm::vec4 color) {
 void putPixel(int x, int y, float z, glm::vec4 color) {
 
 	int index = (x + y * screenWidth);
