@@ -19,30 +19,7 @@ HDC hdcr = 0;
 byte* backBuffer;
 float* depthBuffer;
 
-glm::vec3 transform(glm::vec3 coordinate, glm::mat4 transform)
-{
-	float x = (coordinate.x * transform[0][0]) + (coordinate.y * transform[1][0]) + (coordinate.z * transform[2][0]) + transform[3][0];
-	float y = (coordinate.x * transform[0][1]) + (coordinate.y * transform[1][1]) + (coordinate.z * transform[2][1]) + transform[3][1];
-	float z = (coordinate.x * transform[0][2]) + (coordinate.y * transform[1][2]) + (coordinate.z * transform[2][2]) + transform[3][2];
-	return glm::vec3(x, y, z);
-}
 
-
-glm::vec3 transformCoordinate(glm::vec3 coordinate, glm::mat4 transform)
-{
-	float x = (coordinate.x * transform[0][0]) + (coordinate.y * transform[1][0]) + (coordinate.z * transform[2][0]) + transform[3][0];
-	float y = (coordinate.x * transform[0][1]) + (coordinate.y * transform[1][1]) + (coordinate.z * transform[2][1]) + transform[3][1];
-	float z = (coordinate.x * transform[0][2]) + (coordinate.y * transform[1][2]) + (coordinate.z * transform[2][2]) + transform[3][2];
-	float w = 1.0f / ((coordinate.x * transform[0][3]) + (coordinate.y * transform[1][3]) + (coordinate.z * transform[2][3]) + transform[3][3]);
-	return glm::vec3(x * w, y * w, z * w);
-}
-
-glm::vec3 project(glm::vec3 vec, glm::mat4 trans) {
-	glm::vec3 point = transformCoordinate(vec, trans);
-	int x = point.x * screenWidth + screenWidth / 2.0f;
-	int y = -point.y * screenHeight + screenHeight / 2.0f;
-	return glm::vec3(x, y, point.z);
-}
 
 //Draw the actual point, 
 void putPixel(int x, int y, int z, glm::vec4 color) {
@@ -205,19 +182,23 @@ void Render(Camera c, Mesh* m)
 	//c.Target = m[0].Position;
 	glm::mat4 viewMatrix = glm::lookAtLH(c.Position, c.Target, yvec);
 	//Create a projection matrix for converting a vector to a point on screen
-	glm::mat4 projMatrix = glm::perspectiveFovLH(0.78f, (float)screenWidth, (float)screenHeight, 0.01f, 1.0f);
+	glm::mat4 projMatrix = glm::perspectiveFovRH(0.78f, (float)screenWidth, (float)screenHeight, 0.01f, 1.0f);
 	if (m != nullptr) {
 		//Create a worldMatrix to transform an objects vectors to that of the world also rotate it
-		glm::mat4 worldMatrix = glm::toMat4(glm::quat(m->Rotation)) * glm::translate(glm::mat4(1.0f), m->Position);
+		glm::mat4 modelMatrix = glm::mat4(1.0f) * glm::eulerAngleXYZ(m->Rotation.x, m->Rotation.y, m->Rotation.z);
 		//Create the final transformation matrix which can be applied to every object
-		glm::mat4 transformMatrix = projMatrix * viewMatrix * worldMatrix;
+		glm::mat4 transformMatrix = modelMatrix * viewMatrix * projMatrix;
 
 		int faceIndex = 0;
 		for (int i = 0; i < m->faceCount - 1; i++) {
 			Face f = m->Faces[i];
-			glm::vec3 point0 = project(m->Vertices[f.A], transformMatrix);
-			glm::vec3 point1 = project(m->Vertices[f.B], transformMatrix);
-			glm::vec3 point2 = project(m->Vertices[f.C], transformMatrix);
+			glm::vec3 point0 = glm::project(m->Vertices[f.A], viewMatrix * modelMatrix, projMatrix, glm::vec4(0, 0, screenWidth, screenHeight));
+			glm::vec3 point1 = glm::project(m->Vertices[f.B], viewMatrix * modelMatrix, projMatrix, glm::vec4(0, 0, screenWidth, screenHeight));
+			glm::vec3 point2 = glm::project(m->Vertices[f.C], viewMatrix * modelMatrix, projMatrix, glm::vec4(0, 0, screenWidth, screenHeight));
+			
+			//glm::vec3 point0 = project(m->Vertices[f.A], transformMatrix);
+			/*glm::vec3 point1 = project(m->Vertices[f.B], transformMatrix);
+			glm::vec3 point2 = project(m->Vertices[f.C], transformMatrix);*/
 			//Project the vertice to a point on screen
 
 			float color = 0.25f + (faceIndex % m->faceCount) * 0.75f / m->faceCount;
@@ -245,11 +226,11 @@ void StartRendering(HDC hdc, Camera* c, Mesh** m, int allocated) {
 		}
 
 		HBITMAP map = CreateBitmap(screenWidth, screenHeight, 1, 8 * 4, backBuffer);
-		HDC src = CreateCompatibleDC(hdcr);
+		HDC src = CreateCompatibleDC(hdc);
 		
 		SelectObject(src, map); // Inserting picture into our temp HDC
 								// Copy image from temp HDC to window
-		BitBlt(hdcr, // Destination
+		BitBlt(hdc, // Destination
 			0,  // x and
 			0,  // y - upper-left corner of place, where we'd like to copy
 			screenWidth, // width of the region
