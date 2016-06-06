@@ -42,6 +42,9 @@
     <ClInclude Include="mainRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="performance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mesh.cpp">

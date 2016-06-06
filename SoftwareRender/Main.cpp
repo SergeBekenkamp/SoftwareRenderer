@@ -1,6 +1,7 @@
 // GT_HelloWorldWin32.cpp
 // compile with: /D_UNICODE /DUNICODE /DWIN32 /D_WINDOWS /c
-
+#pragma comment(linker, "/subsystem:\"console\" /entry:\"WinMainCRTStartup\"")
+#include <stdio.h>
 #include <windows.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,7 @@
 #include <future>
 #include <iostream>
 #include <string>
+#include <handleapi.h>
 
 // Global variables
 
@@ -20,8 +22,8 @@ static TCHAR szWindowClass[] = _T("win32app");
 // The string that appears in the application's title bar.
 static TCHAR szTitle[] = _T("Software 3d renderer");
 
-static int width = 640;
-static int height = 480;
+static int width = 1280;
+static int height = 960;
 
 
 HINSTANCE hInst;
@@ -140,3 +142,4 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	return 0;
 }
+

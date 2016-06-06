@@ -1,5 +1,5 @@
 #include "mesh.h"
-#include "glm.hpp"
+#include "glm/glm.hpp"
 
 Mesh::Mesh(string name, int verticeCount, int faceCount) :
 	Name{ name },

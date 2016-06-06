@@ -2,15 +2,15 @@
 #include "mesh.h"
 #include "face.h"
 #include "camera.h"
-#include "gtc\matrix_transform.hpp"
-#include "gtc\quaternion.hpp"
-#include "glm.hpp"
-#include <gtc/type_ptr.hpp>
-#include "ext.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/quaternion.hpp"
+#include "glm/glm.hpp"
+#include "glm/ext.hpp"
 #include "mainRenderer.h"
 #include "meshLoader.h"
 #include "linkedList.h"
 #include "math.h"
+#include "performance.h"
 
 int screenWidth = 0;
 int screenHeight = 0;
@@ -191,30 +191,32 @@ float rotation = 0.01f;
 void StartRendering(HDC hdc, Camera* c, Mesh** m, int allocated) {
 
 	while (true) {
-		int i = 0;
-		while (i < allocated) {
-			Rotate(m[i], rotation);
-			Render((*c), m[i]);
-			i++;
+		speedtest__("Render speed: ") {
+			int i = 0;
+			while (i < allocated) {
+				Rotate(m[i], rotation);
+				Render((*c), m[i]);
+				i++;
+			}
+
+			HBITMAP map = CreateBitmap(screenWidth, screenHeight, 1, 8 * 4, backBuffer);
+			HDC src = CreateCompatibleDC(hdc);
+
+			SelectObject(src, map); // Inserting picture into our temp HDC
+									// Copy image from temp HDC to window
+			BitBlt(hdc, // Destination
+				0,  // x and
+				0,  // y - upper-left corner of place, where we'd like to copy
+				screenWidth, // width of the region
+				screenHeight, // height
+				src, // source
+				0,   // x and
+				0,   // y of upper left corner  of part of the source, from where we'd like to copy
+				SRCCOPY); // Defined DWORD to juct copy pixels. Watch more on msdn;
+
+			DeleteDC(src); // Deleting temp HDC
+			ClearBuffers();
 		}
-
-		HBITMAP map = CreateBitmap(screenWidth, screenHeight, 1, 8 * 4, backBuffer);
-		HDC src = CreateCompatibleDC(hdc);
-		
-		SelectObject(src, map); // Inserting picture into our temp HDC
-								// Copy image from temp HDC to window
-		BitBlt(hdc, // Destination
-			0,  // x and
-			0,  // y - upper-left corner of place, where we'd like to copy
-			screenWidth, // width of the region
-			screenHeight, // height
-			src, // source
-			0,   // x and
-			0,   // y of upper left corner  of part of the source, from where we'd like to copy
-			SRCCOPY); // Defined DWORD to juct copy pixels. Watch more on msdn;
-
-		DeleteDC(src); // Deleting temp HDC
-		ClearBuffers();
 	}
 }
 

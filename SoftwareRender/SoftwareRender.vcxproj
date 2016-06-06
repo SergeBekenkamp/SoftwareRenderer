@@ -27,6 +27,7 @@
     <ClInclude Include="mesh.h" />
     <ClInclude Include="mainRenderer.h" />
     <ClInclude Include="meshLoader.h" />
+    <ClInclude Include="performance.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="camera.cpp" />

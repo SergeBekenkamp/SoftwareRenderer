@@ -1,2 +1,7 @@
 .vs/config/applicationhost.config
 SoftwareRender.VC.db
+SoftwareRender/x64/
+SoftwareRender/Release/SoftwareRender.tlog/unsuccessfulbuild
+SoftwareRender/Release/
+SoftwareRender/Debug/
+x64/
