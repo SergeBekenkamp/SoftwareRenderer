@@ -11,6 +11,8 @@
 #include "linkedList.h"
 #include "math.h"
 #include "performance.h"
+#include "glm/gtx/projection.hpp"
+#include "scanLineData.h"
 
 int screenWidth = 0;
 int screenHeight = 0;
@@ -43,6 +45,39 @@ void putPixel(int x, int y, float z, glm::vec4 color) {
 void drawPoint(glm::vec3 point, glm::vec4 color) {
 	if (point.x >= 0 && point.y >= 0 && point.x < screenWidth && point.y < screenHeight) {
 		putPixel(point.x, point.y, point.z, color);
+	}
+}
+
+void ProcessScanLine(scanLineData data, Vertex va, Vertex vb, Vertex vc, Vertex vd, glm::vec4 color)
+{
+	auto pa = va.Coordinates;
+	auto pb = vb.Coordinates;
+	auto pc = vc.Coordinates;
+	auto pd = vd.Coordinates;
+
+	// Thanks to current Y, we can compute the gradient to compute others values like
+	// the starting X (sx) and ending X (ex) to draw between
+	// if pa.Y == pb.Y or pc.Y == pd.Y, gradient is forced to 1
+	auto gradient1 = pa.y != pb.y ? (data.currentY - pa.y) / (pb.y - pa.y) : 1;
+	auto gradient2 = pc.y != pd.y ? (data.currentY - pc.y) / (pd.y - pc.y) : 1;
+
+	int sx = (int)Interpolate(pa.x, pb.x, gradient1);
+	int ex = (int)Interpolate(pc.x, pd.x, gradient2);
+
+	// starting Z & ending Z
+	float z1 = Interpolate(pa.z, pb.z, gradient1);
+	float z2 = Interpolate(pc.z, pd.z, gradient2);
+
+	// drawing a line from left (sx) to right (ex) 
+	for (auto x = sx; x < ex; x++)
+	{
+		float gradient = (x - sx) / (float)(ex - sx);
+
+		auto z = Interpolate(z1, z2, gradient);
+		auto ndotl = data.ndotla;
+		// changing the color value using the cosine of the angle
+		// between the light vector and the normal vector
+		drawPoint(glm::vec3(x, data.currentY, z), color * ndotl);
 	}
 }
 
@@ -81,57 +116,99 @@ float LineSide2D(glm::vec3 p, glm::vec3 lineFrom, glm::vec3 lineTo)
 
 }
 
-void DrawTriangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec4 color)
+float ComputeNDotL(glm::vec3 vertex, glm::vec3 normal, glm::vec3 lightPosition)
+{
+	auto lightDirection = lightPosition - vertex;
+
+	normal = glm::normalize(normal);
+	lightDirection = glm::normalize(lightDirection);
+
+	float a = 0;
+	auto b = glm::dot(normal, lightDirection);
+	return (a < b) ? b : a;
+}
+
+
+void DrawTriangle(Vertex v1, Vertex v2, Vertex v3, glm::vec4 color)
 {
 	// Sorting the points in order to always have this order on screen p1, p2 & p3
 	// with p1 always up (thus having the Y the lowest possible to be near the top screen)
 	// then p2 between p1 & p3
-	if (p1.y > p2.y)
+	if (v1.Coordinates.y > v2.Coordinates.y)
 	{
-		glm::vec3 temp = p2;
-		p2 = p1;
-		p1 = temp;
+		auto temp = v2;
+		v2 = v1;
+		v1 = temp;
 	}
 
-	if (p2.y > p3.y)
+	if (v2.Coordinates.y > v3.Coordinates.y)
 	{
-		glm::vec3 temp = p2;
-		p2 = p3;
-		p3 = temp;
+		auto temp = v2;
+		v2 = v3;
+		v3 = temp;
 	}
 
-	if (p1.y > p2.y)
+	if (v1.Coordinates.y > v2.Coordinates.y)
 	{
-		glm::vec3 temp = p2;
-		p2 = p1;
-		p1 = temp;
+		auto temp = v2;
+		v2 = v1;
+		v1 = temp;
 	}
 
-		if (LineSide2D(p2, p1, p3) > 0)
+	auto p1 = v1.Coordinates;
+	auto p2 = v2.Coordinates;
+	auto p3 = v3.Coordinates;
+
+	//Compute the normal
+	glm::vec3 vnFace = (v1.Normal + v2.Normal + v3.Normal) / 3;
+	glm::vec3 centerPoint = (v1.WorldCoordinates + v2.WorldCoordinates + v3.WorldCoordinates) / 3;
+	// Light position 
+	glm::vec3 lightPos = glm::vec3(0, 10, 10);
+	float ndotl = ComputeNDotL(centerPoint, vnFace, lightPos);
+	auto data = scanLineData(ndotl);
+
+	// http://en.wikipedia.org/wiki/Slope
+	// Computing slopes
+	float dP1P2, dP1P3;
+	if (p2.y - p1.y > 0)
+		dP1P2 = (p2.x - p1.x) / (p2.y - p1.y);
+	else
+		dP1P2 = 0;
+
+	if (p3.y - p1.y > 0)
+		dP1P3 = (p3.x - p1.x) / (p3.y - p1.y);
+	else
+		dP1P3 = 0;
+
+	if (dP1P2 > dP1P3)
 	{
-		for (int y = (int)p1.y; y <= (int)p3.y; y++)
+		for (auto y = (int)p1.y; y <= (int)p3.y; y++)
 		{
+			data.currentY = y;
+
 			if (y < p2.y)
 			{
-				ProcessScanLine(y, p1, p3, p1, p2, color);
+				ProcessScanLine(data, v1, v3, v1, v2, color);
 			}
 			else
 			{
-				ProcessScanLine(y, p1, p3, p2, p3, color);
+				ProcessScanLine(data, v1, v3, v2, v3, color);
 			}
 		}
-	}	
+	}
 	else
 	{
-		for (int y = (int)p1.y; y <= (int)p3.y; y++)
+		for (auto y = (int)p1.y; y <= (int)p3.y; y++)
 		{
+			data.currentY = y;
+
 			if (y < p2.y)
 			{
-				ProcessScanLine(y, p1, p2, p1, p3, color);
+				ProcessScanLine(data, v1, v2, v1, v3, color);
 			}
 			else
 			{
-				ProcessScanLine(y, p2, p3, p1, p3, color);
+				ProcessScanLine(data, v2, v3, v1, v3, color);
 			}
 		}
 	}
@@ -146,6 +223,21 @@ void ClearBuffers() {
 	}
 }
 
+Vertex Project(Vertex vertex, glm::mat4 trans, glm::mat4 world) {
+	glm::vec4 point2d = glm::vec4(vertex.Coordinates, 0) * trans;
+
+
+	glm::vec4 point3dWorld = glm::vec4(vertex.Coordinates, 0) * world;
+
+	glm::vec4 normal3dWorld = glm::vec4(vertex.Normal, 0) * world;
+
+	auto x = point2d.x * screenWidth + screenWidth / 2.0f;
+	auto y = -point2d.y * screenHeight + screenHeight / 2.0f;
+
+	return Vertex((glm::vec3)normal3dWorld,  glm::vec3(x, y, point2d.z), (glm::vec3)point3dWorld);
+}
+
+
 
 void Render(Camera c, Mesh* m)
 {
@@ -158,20 +250,16 @@ void Render(Camera c, Mesh* m)
 	glm::mat4 projMatrix = glm::perspectiveFovRH(0.78f, (float)screenWidth, (float)screenHeight, 0.01f, 1.0f);
 	if (m != nullptr) {
 		//Create a worldMatrix to transform an objects vectors to that of the world also rotate it
-		glm::mat4 modelMatrix = glm::mat4(1.0f) * glm::eulerAngleXYZ(m->Rotation.x, m->Rotation.y, m->Rotation.z);
+		glm::mat4 worldMatrix = glm::mat4(1.0f) * glm::eulerAngleXYZ(m->Rotation.x, m->Rotation.y, m->Rotation.z);
 		//Create the final transformation matrix which can be applied to every object
-		glm::mat4 transformMatrix = modelMatrix * viewMatrix * projMatrix;
+		glm::mat4 transformMatrix = worldMatrix * viewMatrix * projMatrix;
 
 		int faceIndex = 0;
 		for (int i = 0; i < m->faceCount - 1; i++) {
 			Face f = m->Faces[i];
-			glm::vec3 point0 = glm::project(m->Vertices[f.A], viewMatrix * modelMatrix, projMatrix, glm::vec4(0, 0, screenWidth, screenHeight));
-			glm::vec3 point1 = glm::project(m->Vertices[f.B], viewMatrix * modelMatrix, projMatrix, glm::vec4(0, 0, screenWidth, screenHeight));
-			glm::vec3 point2 = glm::project(m->Vertices[f.C], viewMatrix * modelMatrix, projMatrix, glm::vec4(0, 0, screenWidth, screenHeight));
-			
-			//glm::vec3 point0 = project(m->Vertices[f.A], transformMatrix);
-			/*glm::vec3 point1 = project(m->Vertices[f.B], transformMatrix);
-			glm::vec3 point2 = project(m->Vertices[f.C], transformMatrix);*/
+			auto point0 = Project(m->Vertices[f.A], transformMatrix, worldMatrix);
+			auto point1 = Project(m->Vertices[f.B], transformMatrix, worldMatrix);
+			auto point2 = Project(m->Vertices[f.C], transformMatrix, worldMatrix);
 			//Project the vertice to a point on screen
 
 			float color = 0.25f + (faceIndex % m->faceCount) * 0.75f / m->faceCount;
@@ -232,7 +320,7 @@ void MainRender(HDC hdc, int w, int h)
 	Mesh* meshes[1024];
 	meshes[0] = LoadMesh("resources\\monkey.babylon");
 	meshes[1] = Mesh::CreateCube();
-	Camera* c = &Camera(glm::vec3(0, 0, 10.0f), glm::vec3(0, 0, 0));
+	Camera* c = &Camera(glm::vec3(0, 0, -1000.0f), meshes[0]->Position);
 
 	StartRendering(hdc, c, meshes, 1);
 	free(backBuffer);

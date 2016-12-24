@@ -22,8 +22,8 @@ static TCHAR szWindowClass[] = _T("win32app");
 // The string that appears in the application's title bar.
 static TCHAR szTitle[] = _T("Software 3d renderer");
 
-static int width = 1280;
-static int height = 960;
+static int width = 1024;
+static int height = 720;
 
 
 HINSTANCE hInst;

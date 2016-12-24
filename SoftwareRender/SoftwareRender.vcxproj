@@ -21,6 +21,8 @@
   <ItemGroup>
     <ClInclude Include="camera.h" />
     <ClInclude Include="face.h" />
+    <ClInclude Include="scanLineData.h" />
+    <ClInclude Include="vertex.h" />
     <ClInclude Include="json\json\json-forwards.h" />
     <ClInclude Include="json\json\json.h" />
     <ClInclude Include="math.h" />

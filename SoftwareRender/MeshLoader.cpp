@@ -41,7 +41,11 @@ Mesh* LoadMesh(string fileLocation) {
 					float x = vertices[index * verticeSteps].asFloat();
 					float y = vertices[index * verticeSteps + 1].asFloat();
 					float z = vertices[index * verticeSteps + 2].asFloat();
-					m->Vertices[index] = glm::vec3(x, y, z);
+
+					float nx = vertices[index * verticeSteps + 3].asFloat();
+					float ny = vertices[index * verticeSteps + 4].asFloat();
+					float nz = vertices[index * verticeSteps + 5].asFloat();
+					m->Vertices[index] = Vertex(glm::vec3(nx, ny, nz), glm::vec3(x, y, z));
 				}
 
 				// Then filling the Faces array

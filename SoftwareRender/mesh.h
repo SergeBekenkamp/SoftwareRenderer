@@ -4,6 +4,7 @@
 #include "face.h"
 #include <string>
 #include <memory>
+#include "vertex.h"
 
 using namespace std;
 
@@ -14,7 +15,7 @@ public:
 	glm::vec3 Rotation;
 	int verticeCount;
 	int faceCount;
-	std::unique_ptr<glm::vec3[]> Vertices;
+	std::unique_ptr<Vertex[]> Vertices;
 	std::unique_ptr<Face[]> Faces;
 	Mesh(string name, int verticeCount, int faceCount);
 	~Mesh();
